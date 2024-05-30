@@ -89,7 +89,7 @@ function createMemory(req, res) {
       fs.writeFile(memoriesFilePath, JSON.stringify(memories), (err) => {
         if (err) {
           if (!res.headersSent) {
-            res.writeHead(500, { "Content=Type": "text/plain" });
+            res.writeHead(500, { "Content-Type": "text/plain" });
             res.end("Internal Server Error");
           }
           return;
