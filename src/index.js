@@ -4,23 +4,28 @@ const authenticate = require("./auth");
 
 const memoriesFilePath = "./memories.json";
 
+// Initialize memories file if it does not exist
 if (!fs.existsSync(memoriesFilePath)) {
   fs.writeFileSync(memoriesFilePath, JSON.stringify([]));
 }
 
 const server = http.createServer((req, res) => {
   if (req.url === "/") {
-    res.writeHead(200, { "Content-Type": "application/json" });
-    res.end(
-      JSON.stringify({
-        authenticated: true,
-        msg: "Welcome to my memories app homepage, as an authenticated user, you can now create and view memories",
-        route: "localhost:3000/memories",
-      })
-    );
+    authenticate(req, res, () => {
+      res.writeHead(200, { "Content-Type": "application/json" });
+      res.end(
+        JSON.stringify({
+          authenticated: true,
+          msg: "Welcome to my memories app homepage, as an authenticated user, you can now create and view memories",
+          route: "localhost:3000/memories",
+        })
+      );
+    });
   } else if (req.url.startsWith("/memories")) {
     if (req.method === "GET") {
-      viewMemories(req, res);
+      authenticate(req, res, () => {
+        viewMemories(req, res);
+      });
     }
   } else {
     res.writeHead(404, { "Content-Type": "text/plain" });
