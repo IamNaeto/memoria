@@ -35,6 +35,10 @@ const server = http.createServer((req, res) => {
       authenticate(req, res, () => {
         createMemory(req, res);
       });
+    } else if (req.method === "DELETE") {
+      authenticate(req, res, () => {
+        deleteMemory(req, res);
+      });
     } else {
       res.writeHead(405, { "Content-Type": "text/plain" });
       res.end("Method not allowed");
@@ -62,7 +66,7 @@ function viewMemories(req, res) {
   });
 }
 
-//Function to create a memory
+//Function to create a new memory
 function createMemory(req, res) {
   let body = "";
 
@@ -106,6 +110,53 @@ function createMemory(req, res) {
     if (!res.headersSent) {
       res.writeHead(400, { "Content-Type": "text/plain" });
       res.end("Bad Request");
+    }
+  });
+}
+
+// Function to delete a memory
+function deleteMemory(req, res) {
+  const memoryId = req.url.split("/memories/")[1]; // Extract memory ID from URL
+
+  if (!memoryId) {
+    res.writeHead(400, { "Content-Type": "text/plain" });
+    res.end("Missing memory ID");
+    return;
+  }
+
+  fs.readFile(memoriesFilePath, (err, data) => {
+    if (err) {
+      console.error("Error reading memories file:", err);
+      res.writeHead(500, { "Content-Type": "text/plain" });
+      res.end("Internal Server Error: Could not read memories data.");
+      return;
+    }
+
+    try {
+      const memories = JSON.parse(data);
+      const filteredMemories = memories.filter(
+        (memory) => memory.id !== parseInt(memoryId)
+      );
+
+      fs.writeFile(
+        memoriesFilePath,
+        JSON.stringify(filteredMemories),
+        (err) => {
+          if (err) {
+            console.error("Error writing memories file:", err);
+            res.writeHead(500, { "Content-Type": "text/plain" });
+            res.end("Internal Server Error: Could not save updated memories.");
+            return;
+          }
+
+          res.writeHead(200, { "Content-Type": "text/plain" });
+          res.end(`Memory with ID ${memoryId} deleted successfully.`);
+        }
+      );
+    } catch (error) {
+      console.error("Error deleting memory:", error);
+      res.writeHead(400, { "Content-Type": "text/plain" });
+      res.end("Bad Request: Error processing memory data.");
     }
   });
 }
