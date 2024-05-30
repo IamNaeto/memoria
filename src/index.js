@@ -16,8 +16,13 @@ const server = http.createServer((req, res) => {
       res.end(
         JSON.stringify({
           authenticated: true,
-          msg: "Welcome to my memories app homepage, as an authenticated user, you can now create and view memories",
+          msg: "Welcome to my memories app homepage, as an authenticated user, you can now create and view memories. Additionally you can also delete memories",
           route: "localhost:3000/memories",
+          methods: {
+            GET: "view memories",
+            POST: "create memories",
+            DELETE: "delete memories by id",
+          },
         })
       );
     });
@@ -26,6 +31,13 @@ const server = http.createServer((req, res) => {
       authenticate(req, res, () => {
         viewMemories(req, res);
       });
+    } else if (req.method === "POST") {
+      authenticate(req, res, () => {
+        createMemory(req, res);
+      });
+    } else {
+      res.writeHead(405, { "Content-Type": "text/plain" });
+      res.end("Method not allowed");
     }
   } else {
     res.writeHead(404, { "Content-Type": "text/plain" });
@@ -33,19 +45,67 @@ const server = http.createServer((req, res) => {
   }
 });
 
-//function to view memories
+//Function to view memories
 function viewMemories(req, res) {
   fs.readFile(memoriesFilePath, (err, data) => {
     if (err) {
       if (!res.headersSent) {
         res.writeHead(500, { "Content-Type": "text/plain" });
-        res.end("Internal Service Error");
+        res.end("Internal Server Error");
       }
       return;
     }
     if (!res.headersSent) {
       res.writeHead(200, { "Content-Type": "text/plain" });
       res.end(data);
+    }
+  });
+}
+
+//Function to create a memory
+function createMemory(req, res) {
+  let body = "";
+
+  req.on("data", (chunk) => {
+    body += chunk.toString();
+  });
+
+  req.on("end", () => {
+    const newMemory = JSON.parse(body);
+
+    fs.readFile(memoriesFilePath, (err, data) => {
+      if (err) {
+        if (!res.headersSent) {
+          res.writeHead(500, { "Content-Type": "text/plain" });
+          res.end("Internal Server Error");
+        }
+        return;
+      }
+
+      const memories = JSON.parse(data);
+      newMemory.id = memories.length ? memories[memories.length - 1].id + 1 : 1;
+      memories.push(newMemory);
+
+      fs.writeFile(memoriesFilePath, JSON.stringify(memories), (err) => {
+        if (err) {
+          if (!res.headersSent) {
+            res.writeHead(500, { "Content=Type": "text/plain" });
+            res.end("Internal Server Error");
+          }
+          return;
+        }
+        if (!res.headersSent) {
+          res.writeHead(201, { "Content-Type": "application/json" });
+          res.end(JSON.stringify(newMemory));
+        }
+      });
+    });
+  });
+
+  req.on("error", () => {
+    if (!res.headersSent) {
+      res.writeHead(400, { "Content-Type": "text/plain" });
+      res.end("Bad Request");
     }
   });
 }

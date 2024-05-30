@@ -3,7 +3,7 @@ function authenticate(req, res, next) {
 
   if (!authHeader) {
     res.writeHead(401, { "Content-Type": "text/plain" });
-    res.end("Authentication required");
+    res.end("Authentication Required");
     return;
   }
 
@@ -14,8 +14,8 @@ function authenticate(req, res, next) {
   if (username === "admin" && password === "password") {
     next();
   } else {
-    res.writeHead(401, { "Content-Type": "plain/text" });
-    res.end("Authentication required");
+    res.writeHead(401, { "Content-Type": "text/plain" });
+    res.end("Authentication Required");
   }
 }
 
